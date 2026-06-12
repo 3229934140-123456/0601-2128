@@ -21,6 +21,7 @@ interface ActivityState {
   cancelRegistration: (registrationId: string) => Promise<boolean>;
   joinWaitlist: (activityId: string, userId: string) => Promise<boolean>;
   leaveWaitlist: (waitlistId: string) => void;
+  confirmWaitlistRegistration: (waitlistId: string) => Promise<{ success: boolean; message: string }>;
   addReview: (activityId: string, userId: string, rating: number, content: string) => void;
   getReviewsByActivity: (activityId: string) => Review[];
   getUserRegistrations: (userId: string) => Registration[];
@@ -56,9 +57,11 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     if (!activity) {
       return { success: false, message: '活动不存在' };
     }
+
+    const totalPeople = 1 + companionInfo.length;
     
-    if (activity.remainingCapacity <= 0) {
-      return { success: false, message: '活动已满员' };
+    if (activity.remainingCapacity < totalPeople) {
+      return { success: false, message: `余票不足，需要 ${totalPeople} 个名额，当前仅剩 ${activity.remainingCapacity} 个名额` };
     }
     
     const existingReg = registrations.find(
@@ -247,6 +250,82 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     );
     mockApi.saveWaitlists(updatedWaitlists);
     set({ waitlists: updatedWaitlists });
+  },
+
+  confirmWaitlistRegistration: async (waitlistId) => {
+    const { waitlists, activities, registrations, tickets } = get();
+    const waitlist = waitlists.find(w => w.id === waitlistId);
+    
+    if (!waitlist || waitlist.status !== 'notified') {
+      return { success: false, message: '候补状态不正确，无法确认报名' };
+    }
+    
+    const activity = activities.find(a => a.id === waitlist.activityId);
+    if (!activity) {
+      return { success: false, message: '活动不存在' };
+    }
+    
+    if (activity.remainingCapacity <= 0) {
+      return { success: false, message: '活动已满员' };
+    }
+    
+    const users = mockApi.getUsers();
+    const user = users.find(u => u.id === waitlist.userId);
+    if (!user) {
+      return { success: false, message: '用户不存在' };
+    }
+    
+    const existingReg = registrations.find(
+      r => r.activityId === waitlist.activityId && r.userId === waitlist.userId && r.status !== 'cancelled'
+    );
+    if (existingReg) {
+      return { success: false, message: '您已报名该活动' };
+    }
+    
+    const registration: Registration = {
+      id: generateId(),
+      userId: waitlist.userId,
+      activityId: waitlist.activityId,
+      status: 'approved',
+      companionCount: 0,
+      companionInfo: [],
+      createdAt: new Date(),
+      reviewedAt: new Date(),
+    };
+    
+    const ticket: Ticket = {
+      id: generateId(),
+      registrationId: registration.id,
+      qrCode: generateTicketCode(waitlist.activityId, waitlist.userId),
+      status: 'unused',
+      createdAt: new Date(),
+    };
+    
+    const updatedWaitlists = waitlists.map(w =>
+      w.id === waitlistId ? { ...w, status: 'confirmed' as const, confirmedAt: new Date() } : w
+    );
+    
+    const updatedRegistrations = [...registrations, registration];
+    const updatedTickets = [...tickets, ticket];
+    const updatedActivities = activities.map(a =>
+      a.id === waitlist.activityId
+        ? { ...a, remainingCapacity: a.remainingCapacity - 1 }
+        : a
+    );
+    
+    mockApi.saveWaitlists(updatedWaitlists);
+    mockApi.saveRegistrations(updatedRegistrations);
+    mockApi.saveTickets(updatedTickets);
+    mockApi.saveActivities(updatedActivities);
+    
+    set({
+      waitlists: updatedWaitlists,
+      registrations: updatedRegistrations,
+      tickets: updatedTickets,
+      activities: updatedActivities,
+    });
+    
+    return { success: true, message: '候补确认成功，电子票已生成' };
   },
 
   addReview: (activityId, userId, rating, content) => {

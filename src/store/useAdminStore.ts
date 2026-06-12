@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Activity, Registration, Ticket, User, Waitlist } from '@/types';
 import { mockApi } from '@/mock';
-import { generateId } from '@/utils/validation';
+import { generateId, generateTicketCode } from '@/utils/validation';
 
 interface AdminState {
   activities: Activity[];
@@ -28,6 +28,7 @@ interface AdminState {
     topActivities: (Activity & { registrationCount: number })[];
   };
   sendActivityNotice: (activityId: string, notice: string) => void;
+  notifyWaitlist: (waitlistId: string) => boolean;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -100,12 +101,48 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   reviewRegistration: (id, status) => {
-    const { registrations } = get();
+    const { registrations, tickets, activities } = get();
+    const registration = registrations.find(r => r.id === id);
+    
+    if (!registration) return;
+    
     const updatedRegistrations = registrations.map(r =>
       r.id === id ? { ...r, status, reviewedAt: new Date() } : r
     );
+    
+    let updatedTickets = [...tickets];
+    let updatedActivities = [...activities];
+    
+    if (status === 'approved') {
+      const existingTicket = tickets.find(t => t.registrationId === id);
+      if (!existingTicket) {
+        const newTicket: Ticket = {
+          id: generateId(),
+          registrationId: id,
+          qrCode: generateTicketCode(registration.activityId, registration.userId),
+          status: 'unused',
+          createdAt: new Date(),
+        };
+        updatedTickets = [...tickets, newTicket];
+      }
+      
+      const totalPeople = 1 + registration.companionCount;
+      updatedActivities = activities.map(a =>
+        a.id === registration.activityId
+          ? { ...a, remainingCapacity: Math.max(0, a.remainingCapacity - totalPeople) }
+          : a
+      );
+    }
+    
     mockApi.saveRegistrations(updatedRegistrations);
-    set({ registrations: updatedRegistrations });
+    mockApi.saveTickets(updatedTickets);
+    mockApi.saveActivities(updatedActivities);
+    
+    set({ 
+      registrations: updatedRegistrations, 
+      tickets: updatedTickets,
+      activities: updatedActivities,
+    });
   },
 
   toggleBlacklist: (userId) => {
@@ -288,5 +325,39 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     
     mockApi.saveNotifications(notifications);
     set({ activities: updatedActivities });
+  },
+
+  notifyWaitlist: (waitlistId) => {
+    const { waitlists, activities, users } = get();
+    const waitlist = waitlists.find(w => w.id === waitlistId);
+    
+    if (!waitlist || waitlist.status !== 'waiting') {
+      return false;
+    }
+    
+    const activity = activities.find(a => a.id === waitlist.activityId);
+    if (!activity || activity.remainingCapacity <= 0) {
+      return false;
+    }
+    
+    const updatedWaitlists = waitlists.map(w =>
+      w.id === waitlistId ? { ...w, status: 'notified' as const, notifiedAt: new Date() } : w
+    );
+    
+    const notifications = mockApi.getNotifications();
+    notifications.push({
+      id: generateId(),
+      userId: waitlist.userId,
+      title: '候补名额释放通知',
+      content: `您候补的活动"${activity.title}"有名额释放，请在24小时内确认报名。`,
+      read: false,
+      createdAt: new Date(),
+    });
+    
+    mockApi.saveWaitlists(updatedWaitlists);
+    mockApi.saveNotifications(notifications);
+    set({ waitlists: updatedWaitlists });
+    
+    return true;
   },
 }));

@@ -23,7 +23,7 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
   const isSoldOut = activity.remainingCapacity <= 0;
 
   return (
-    <Link to={`/activity/${activity.id}`}>
+    <Link to={`/activities/${activity.id}`}>
       <Card hoverable className="h-full flex flex-col group">
         <div className="relative aspect-[16/9] overflow-hidden">
           <img

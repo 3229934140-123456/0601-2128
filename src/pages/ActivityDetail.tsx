@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Calendar, MapPin, Users, Clock, AlertTriangle, 
@@ -25,9 +25,13 @@ const categoryConfig: Record<string, { label: string; color: string }> = {
 export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { activities, registerActivity, joinWaitlist, getReviewsByActivity } = useActivityStore();
+  const { activities, registerActivity, joinWaitlist, getReviewsByActivity, loadData } = useActivityStore();
   const { currentUser } = useAuthStore();
   
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const activity = activities.find(a => a.id === id);
   const reviews = activity ? getReviewsByActivity(activity.id) : [];
   
@@ -474,7 +478,7 @@ export default function ActivityDetail() {
         isOpen={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
-          navigate('/tickets');
+          navigate('/my-tickets');
         }}
         title="报名成功"
         size="md"
@@ -488,10 +492,10 @@ export default function ActivityDetail() {
             电子票已生成，请在活动当天凭二维码入场
           </p>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => navigate('/')}>
+            <Button variant="outline" className="flex-1" onClick={() => navigate('/activities')}>
               继续浏览
             </Button>
-            <Button className="flex-1" onClick={() => navigate('/tickets')}>
+            <Button className="flex-1" onClick={() => navigate('/my-tickets')}>
               查看我的票券
             </Button>
           </div>

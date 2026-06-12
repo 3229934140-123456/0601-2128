@@ -13,7 +13,7 @@ type FilterStatus = 'all' | 'unused' | 'used' | 'cancelled';
 
 export default function MyTickets() {
   const { currentUser } = useAuthStore();
-  const { getUserTickets, getUserWaitlists, loadData, leaveWaitlist } = useActivityStore();
+  const { getUserTickets, getUserWaitlists, loadData, leaveWaitlist, confirmWaitlistRegistration } = useActivityStore();
   const navigate = useNavigate();
   
   const [filter, setFilter] = useState<FilterStatus>('all');
@@ -46,6 +46,18 @@ export default function MyTickets() {
     if (confirm('确定要退出候补队列吗？')) {
       leaveWaitlist(waitlistId);
       handleRefresh();
+    }
+  };
+
+  const handleConfirmWaitlist = async (waitlistId: string) => {
+    if (confirm('确认要候补转报名吗？确认后将生成电子票。')) {
+      const result = await confirmWaitlistRegistration(waitlistId);
+      if (result.success) {
+        alert(result.message);
+        handleRefresh();
+      } else {
+        alert(result.message);
+      }
     }
   };
 
@@ -86,18 +98,28 @@ export default function MyTickets() {
                         <p className="text-sm text-gray-500">
                           候补顺位：第 {item.position} 位
                           {item.status === 'notified' && (
-                            <Badge variant="warning" className="ml-2">有名额释放</Badge>
+                            <Badge variant="success" className="ml-2">有名额释放</Badge>
                           )}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleLeaveWaitlist(item.id)}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        退出候补
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {item.status === 'notified' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleConfirmWaitlist(item.id)}
+                          >
+                            确认报名
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLeaveWaitlist(item.id)}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          退出候补
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

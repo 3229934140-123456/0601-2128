@@ -68,6 +68,7 @@ export interface Waitlist {
   status: WaitlistStatus;
   createdAt: Date;
   notifiedAt?: Date;
+  confirmedAt?: Date;
 }
 
 export interface Review {

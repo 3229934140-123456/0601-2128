@@ -34,7 +34,7 @@ const statusMap: Record<WaitlistStatus, { label: string; variant: 'default' | 's
 };
 
 export default function WaitlistManagement() {
-  const { activities, waitlists, users, loadData } = useAdminStore();
+  const { activities, waitlists, users, loadData, notifyWaitlist } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [activityFilter, setActivityFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('waiting');
@@ -77,7 +77,12 @@ export default function WaitlistManagement() {
   const confirmedCount = waitlists.filter(w => w.status === 'confirmed').length;
 
   const handleNotify = (waitlistId: string) => {
-    alert(`已发送候补通知给用户！`);
+    const success = notifyWaitlist(waitlistId);
+    if (success) {
+      alert('已发送候补通知给用户！');
+    } else {
+      alert('通知失败，请检查是否还有余票');
+    }
   };
 
   return (
