@@ -1,0 +1,55 @@
+import { Registration } from '@/types';
+
+export const mockRegistrations: Registration[] = [
+  {
+    id: 'reg-1',
+    userId: 'user-1',
+    activityId: 'act-1',
+    status: 'approved',
+    companionCount: 1,
+    companionInfo: [{ name: '张小明', idCard: '110101201001011234' }],
+    createdAt: new Date('2026-05-20'),
+    reviewedAt: new Date('2026-05-20'),
+  },
+  {
+    id: 'reg-2',
+    userId: 'user-2',
+    activityId: 'act-2',
+    status: 'approved',
+    companionCount: 2,
+    companionInfo: [
+      { name: '李小红', idCard: '110101201502022345' },
+      { name: '李大爷', idCard: '110101195003033456' },
+    ],
+    createdAt: new Date('2026-05-25'),
+    reviewedAt: new Date('2026-05-25'),
+  },
+  {
+    id: 'reg-3',
+    userId: 'user-1',
+    activityId: 'act-4',
+    status: 'pending',
+    companionCount: 0,
+    companionInfo: [],
+    createdAt: new Date('2026-06-10'),
+  },
+  {
+    id: 'reg-4',
+    userId: 'user-3',
+    activityId: 'act-2',
+    status: 'pending',
+    companionCount: 0,
+    companionInfo: [],
+    createdAt: new Date('2026-06-11'),
+  },
+  {
+    id: 'reg-5',
+    userId: 'user-2',
+    activityId: 'act-1',
+    status: 'approved',
+    companionCount: 0,
+    companionInfo: [],
+    createdAt: new Date('2026-06-01'),
+    reviewedAt: new Date('2026-06-01'),
+  },
+];
