@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calendar, MapPin, Users, QrCode, X, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, MapPin, Users, QrCode, X, Star, Maximize2 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
@@ -16,6 +16,8 @@ interface TicketCardProps {
   ticket: Ticket & { activity?: Activity; registration?: any };
   onCancel?: () => void;
   onReview?: () => void;
+  autoOpenQR?: boolean;
+  onEnterVenue?: () => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -25,13 +27,19 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   expired: { label: '已过期', color: 'warning' },
 };
 
-export const TicketCard = ({ ticket, onCancel, onReview }: TicketCardProps) => {
-  const [showQR, setShowQR] = useState(false);
+export const TicketCard = ({ ticket, onCancel, onReview, autoOpenQR = false, onEnterVenue }: TicketCardProps) => {
+  const [showQR, setShowQR] = useState(autoOpenQR);
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewContent, setReviewContent] = useState('');
   const { currentUser } = useAuthStore();
-  const { addReview, cancelRegistration } = useActivityStore();
+  const { addReview, cancelRegistration, loadData } = useActivityStore();
+
+  useEffect(() => {
+    if (autoOpenQR) {
+      setShowQR(true);
+    }
+  }, [autoOpenQR]);
 
   const status = statusConfig[ticket.status];
   const canCancel = ticket.status === 'unused' && ticket.activity && new Date() < ticket.activity.startTime;
@@ -132,10 +140,16 @@ export const TicketCard = ({ ticket, onCancel, onReview }: TicketCardProps) => {
               </Button>
             )}
             {ticket.status === 'unused' && (
-              <Button variant="primary" size="sm" className="flex-1" onClick={() => setShowQR(true)}>
-                <QrCode className="w-4 h-4 mr-1" />
-                出示二维码
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={() => setShowQR(true)}>
+                  <QrCode className="w-4 h-4 mr-1" />
+                  二维码
+                </Button>
+                <Button variant="primary" size="sm" onClick={onEnterVenue}>
+                  <Maximize2 className="w-4 h-4 mr-1" />
+                  入场模式
+                </Button>
+              </>
             )}
           </div>
         </div>

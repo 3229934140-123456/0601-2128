@@ -259,6 +259,11 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     if (!waitlist || waitlist.status !== 'notified') {
       return { success: false, message: '候补状态不正确，无法确认报名' };
     }
+
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    if (waitlist.notifiedAt && (new Date().getTime() - new Date(waitlist.notifiedAt).getTime() > twentyFourHours)) {
+      return { success: false, message: '候补名额已超过24小时确认期限，已自动释放' };
+    }
     
     const activity = activities.find(a => a.id === waitlist.activityId);
     if (!activity) {
@@ -266,7 +271,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     }
     
     if (activity.remainingCapacity <= 0) {
-      return { success: false, message: '活动已满员' };
+      return { success: false, message: '很抱歉，名额已被其他候补用户占用' };
     }
     
     const users = mockApi.getUsers();

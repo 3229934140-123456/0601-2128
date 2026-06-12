@@ -104,7 +104,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     const { registrations, tickets, activities } = get();
     const registration = registrations.find(r => r.id === id);
     
-    if (!registration) return;
+    if (!registration || registration.status !== 'pending') return;
     
     const updatedRegistrations = registrations.map(r =>
       r.id === id ? { ...r, status, reviewedAt: new Date() } : r

@@ -38,6 +38,7 @@ export default function ActivityDetail() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [step, setStep] = useState(1);
+  const [newTicketId, setNewTicketId] = useState<string | null>(null);
   
   const [name, setName] = useState(currentUser?.name || '');
   const [idCard, setIdCard] = useState(currentUser?.idCard || '');
@@ -129,6 +130,9 @@ export default function ActivityDetail() {
       );
       
       if (result.success) {
+        if (result.ticket) {
+          setNewTicketId(result.ticket.id);
+        }
         setShowRegisterModal(false);
         setShowSuccessModal(true);
       } else {
@@ -478,7 +482,7 @@ export default function ActivityDetail() {
         isOpen={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
-          navigate('/my-tickets');
+          navigate('/my-tickets', { state: { newTicketId } });
         }}
         title="报名成功"
         size="md"
@@ -495,7 +499,7 @@ export default function ActivityDetail() {
             <Button variant="outline" className="flex-1" onClick={() => navigate('/activities')}>
               继续浏览
             </Button>
-            <Button className="flex-1" onClick={() => navigate('/my-tickets')}>
+            <Button className="flex-1" onClick={() => navigate('/my-tickets', { state: { newTicketId } })}>
               查看我的票券
             </Button>
           </div>

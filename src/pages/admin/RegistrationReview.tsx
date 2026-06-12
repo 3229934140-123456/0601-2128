@@ -73,11 +73,21 @@ export default function RegistrationReview() {
   };
 
   const handleApprove = (id: string) => {
+    const reg = registrations.find(r => r.id === id);
+    if (!reg || reg.status !== 'pending') return;
     reviewRegistration(id, 'approved');
+    if (selectedRegistration?.id === id) {
+      setSelectedRegistration({ ...selectedRegistration, status: 'approved', reviewedAt: new Date() });
+    }
   };
 
   const handleReject = (id: string) => {
+    const reg = registrations.find(r => r.id === id);
+    if (!reg || reg.status !== 'pending') return;
     reviewRegistration(id, 'rejected');
+    if (selectedRegistration?.id === id) {
+      setSelectedRegistration({ ...selectedRegistration, status: 'rejected', reviewedAt: new Date() });
+    }
   };
 
   const handleToggleBlacklist = (userId: string) => {
